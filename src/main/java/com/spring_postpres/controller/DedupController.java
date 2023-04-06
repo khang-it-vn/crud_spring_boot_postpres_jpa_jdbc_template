@@ -3,12 +3,16 @@ package com.spring_postpres.controller;
 import com.spring_postpres.entity.DebupMatching;
 import com.spring_postpres.entity.DedupFaceCheck;
 import com.spring_postpres.service.DedupService;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.PatternLayout;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -16,11 +20,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 public class DedupController {
+
+    private static final Logger logger = Logger.getLogger(DedupController.class);
+    private static final String LOG_FILE_PATH = "D:\\HdBank\\base\\spring-boot-jpa-postgresql\\logs\\";
     private final DedupService dedupService;
 
     @Autowired
     public DedupController(DedupService dedupService) {
         this.dedupService = dedupService;
+        try {
+            FileAppender fileAppender = new FileAppender(new PatternLayout(), LOG_FILE_PATH);
+            logger.addAppender(fileAppender);
+        } catch (IOException e) {
+            logger.error("Error creating file appender", e);
+        }
     }
 
     /**
@@ -32,6 +45,7 @@ public class DedupController {
     public ResponseEntity<?> createDedupFaceCheck(@RequestBody DedupFaceCheck faceCheck) {
         try {
             dedupService.createDedupFaceCheck(faceCheck.getFaceId(), faceCheck.isChecked());
+            logger.info("Created DedupFaceCheck with ID: " + faceCheck.getFaceId());
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating DedupFaceCheck");
@@ -48,6 +62,7 @@ public class DedupController {
     public ResponseEntity<?> updateDedupFaceCheck(@PathVariable String faceId, @RequestBody DedupFaceCheck faceCheck) {
         try {
             dedupService.updateDedupFaceCheck(faceId, faceCheck.isChecked());
+            logger.info("Updated DedupFaceCheck with ID: " + faceId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating DedupFaceCheck");
@@ -63,6 +78,7 @@ public class DedupController {
     public ResponseEntity<DedupFaceCheck> getDedupFaceCheck(@PathVariable String faceId) {
         try {
             DedupFaceCheck faceCheck = dedupService.getDedupFaceCheck(faceId);
+            logger.info("Retrieved DedupFaceCheck with ID: " + faceId);
             return ResponseEntity.ok().body(faceCheck);
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.notFound().build();
@@ -76,6 +92,7 @@ public class DedupController {
     @GetMapping("/face-checks")
     public ResponseEntity<List<DedupFaceCheck>> getAllDedupFaceChecks() {
         List<DedupFaceCheck> faceChecks = dedupService.getAllDedupFaceChecks();
+        logger.info("Retrieved all DedupFaceChecks");
         return ResponseEntity.ok().body(faceChecks);
     }
 
@@ -88,7 +105,9 @@ public class DedupController {
     public ResponseEntity<?> addMatching(@RequestBody DebupMatching matching) {
         try {
             dedupService.addMatching(matching.getFaceId(), matching.getMatchingFaceId());
+            logger.info("Created DebupMatching with face ID: " + matching.getFaceId() + " and matching face ID: " + matching.getMatchingFaceId());
             return ResponseEntity.status(HttpStatus.CREATED).build();
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating DebupMatching");
         }
@@ -103,6 +122,7 @@ public class DedupController {
     public ResponseEntity<List<DebupMatching>> getMatchings(@PathVariable String faceId) {
         try {
             List<DebupMatching> matchings = dedupService.getMatchings(faceId);
+            logger.info("Retrieved all DebupMatchings for face ID: " + faceId);
             return ResponseEntity.ok().body(matchings);
         } catch (EmptyResultDataAccessException e) {
             return ResponseEntity.notFound().build();
@@ -118,6 +138,7 @@ public class DedupController {
     public ResponseEntity<?> deleteMatching(@PathVariable Long id) {
         try {
             dedupService.deleteMatching(id);
+            logger.info("Deleted DebupMatching with ID: " + id);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting DebupMatching");
